@@ -47,3 +47,5 @@ screen2_menu(){
     done
     
 }
+
+screen2_menu

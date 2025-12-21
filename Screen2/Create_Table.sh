@@ -1,4 +1,3 @@
-
 #!/bin/bash
 
 createTable(){
@@ -77,18 +76,11 @@ createTable(){
             fi
         done
 
-        # # Ask for PK if not set yet
-        # if [ "$pkSet" -eq 0 ]; then
-
         if [ "$counter" -eq 1 ]
         then
-            read -p "Is this column Primary Key? (y/n): " isPK
-            if [ "$isPK" = "y" ]
-            then
-                metadata+="$colName:$colType:PK|"
-            else
-                metadata+="$colName:$colType|"
-            fi
+            # Always set first column as PK
+            echo "The first column will be set as Primary Key (PK) by default."
+            metadata+="$colName:$colType:PK|"
         else
             metadata+="$colName:$colType|"
         fi
