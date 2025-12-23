@@ -1,5 +1,10 @@
 #!/bin/bash
 
+source ./Create_Table.sh
+source ./List_Tables.sh
+source ./Drop_Table.sh
+source ./Insert_Table.sh
+
 screen2_menu(){
     echo "----------------------------------"
     echo " Welcome to Screen 2 - Main Menu "
@@ -19,17 +24,16 @@ screen2_menu(){
     
     case $choice in
     1) 
-        source ./Create_Table.sh
         createTable
         ;;
     2) 
-        echo Listing Tables...
+        listTables
         ;;
     3) 
-        echo Dropping Table...
+        dropTable
         ;;
     4)
-        echo "Insert into Table..."
+        insertIntoTable
         ;;
     5)
         echo "Select from Table..."

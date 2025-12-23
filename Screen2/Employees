@@ -1,1 +1,2 @@
-ID:int:PK|Name:string|age:int
+id|name|age
+1|ahmed|23

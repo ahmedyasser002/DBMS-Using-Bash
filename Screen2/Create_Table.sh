@@ -88,7 +88,16 @@ createTable(){
         ((counter++))
     done
 
-    echo "${metadata%|}" > "$tableName"
+    # Write metadata to a separate file
+    echo "${metadata%|}" > "${tableName}_metadata"
+    # Create table file with header row (column names separated by |)
+    header=""
+    for ((i=1; i<=colNums; i++)); do
+        colDef=$(echo "$metadata" | cut -d'|' -f$i)
+        colName=$(echo "$colDef" | cut -d: -f1)
+        header+="$colName|"
+    done
+    echo "${header%|}" > "$tableName"
     echo "Table $tableName created successfully"
 }
 
@@ -100,3 +109,9 @@ createTable(){
 # 3. Duplicate column names check
 # 4. Check the way of pattern matching if i want to use the +([]) and *([]) patterns
 # 5. Use functions for validation to avoid code repetition
+# 6. Add more constraints (e.g., NOT NULL, UNIQUE)
+# 7. Column name pattern validation (e.g., start with letter, only alphanumeric and _)
+# 8. Limit maximum number of columns
+# 9. Column name can not be repeated
+# 10. Add option to cancel table creation at any point
+# 11. Col type should be int or string only
