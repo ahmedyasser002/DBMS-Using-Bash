@@ -1,4 +1,5 @@
 #!/bin/bash
+
 create_database(){
 	read -p "Enter Database Name: " dbname
 
@@ -19,7 +20,25 @@ list_databases(){
 	echo "📂 Available Databases:"
         echo "$dbs"
     fi
+
 }
+
+connect_database() {
+    read -p "Enter Database Name to connect: " dbname
+
+    if [ -d "$dbname" ]; then
+        cd "$dbname" || return
+        echo -e "\e[32m✅ Connected to database '$dbname'\e[0m"
+	pwd
+	source ../Screen2/screen2_menu.sh
+	screen2_menu
+	
+    else
+        echo -e "\e[31m❌ Database '$dbname' does not exist.\e[0m"
+    fi
+}
+
+
 
 drop_database() {
     read -p "Enter Database Name to Drop: " dbname
@@ -47,13 +66,14 @@ draw_main_menu() {
 while true
 do draw_main_menu
 
-select choice in "Create Database" "List Databases" "Drop Database" "Exit"
+select choice in "Create Database" "List Databases" "Drop Database" "Connect To database" "Exit"
 do
     case $REPLY in
         1) create_database ;;
         2) list_databases ;;
         3) drop_database ;;
-        4) echo "👋 Bye!"
+	4) connect_database ;;
+        5) echo "👋 Bye!"
 	   sleep 2
 	   clear
 	   echo -e "\e[0m" 
