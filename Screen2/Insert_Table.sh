@@ -10,6 +10,9 @@ insertIntoTable(){
         elif [[ "$tableName" =~ [[:space:]] ]]
         then
             echo "Table name cannot contain spaces."
+        elif [[ "$tableName" == *metadata* ]]
+        then
+            echo "Cannot insert into a metadata file."
         elif [ ! -f "$tableName" ] 
         then
             echo "Table does not exist."
@@ -18,14 +21,18 @@ insertIntoTable(){
         fi
     done
 
-    # Read metadata from the first line of the table file
-    IFS='|' read -r -a columns <<< "$(head -n 1 "$tableName")"
+    # Read metadata from the metadata file
+    metaFile="${tableName}_metadata"
+    if [ ! -f "$metaFile" ]; then
+        echo "Metadata file for table does not exist."
+        return
+    fi
+    IFS='|' read -r -a columns <<< "$(cat "$metaFile")"
     numCols=${#columns[@]}
     declare -a rowValues
 
     for (( i=0; i<numCols; i++ ))
     do
-        # Parse column name, type, and constraints
         colDef="${columns[i]}"
         colName=$(echo "$colDef" | cut -d: -f1)
         colType=$(echo "$colDef" | cut -d: -f2)
@@ -48,7 +55,7 @@ insertIntoTable(){
             fi
             # PK uniqueness check
             if [ "$colConstraint" = "PK" ]; then
-                if awk -F: -v val="$value" -v col="$((i+1))" 'NR>1{if($col==val){exit 1}}' "$tableName"; then
+                if awk -F'|' -v val="$value" -v col="$((i+1))" 'NR>0{if($col==val){exit 1}}' "$tableName"; then
                     : # unique
                 else
                     echo "Value must be unique for primary key."
@@ -60,7 +67,7 @@ insertIntoTable(){
         done
     done
 
-    # Join the row values with ':' and append to the table file
-    IFS=':' eval 'echo "${rowValues[*]}"' >> "$tableName"
+    # Join the row values with '|' and append to the table file
+    IFS='|' eval 'echo "${rowValues[*]}"' >> "$tableName"
     echo "Record inserted successfully into '$tableName'."
 }
