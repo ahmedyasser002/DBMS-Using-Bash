@@ -1,9 +1,9 @@
 #!/bin/bash
 
-source ./Create_Table.sh
-source ./List_Tables.sh
-source ./Drop_Table.sh
-source ./Insert_Table.sh
+source ../Screen2/Create_Table.sh
+source ../Screen2/List_Tables.sh
+source ../Screen2/Drop_Table.sh
+source ../Screen2/Insert_Table.sh
 
 screen2_menu(){
     echo "----------------------------------"

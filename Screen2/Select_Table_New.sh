@@ -1,5 +1,5 @@
 #!/bin/bash
-source ./select_cols.sh
+source ../Screen2/select_cols.sh
 selectFromTable(){
 
     while true

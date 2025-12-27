@@ -1,54 +1,41 @@
 #!/bin/bash
-selectCols(){
 
-    read -p "Please Enter columns you want separated by space" cols
+selectCols() {
+
+    table="$1"
+
+    if [ ! -f "$table" ]; then
+        echo "Table does not exist"
+        return 1
+    fi
+
+    read -p "Please enter column names separated by space: " cols
     arr=($cols)
 
-
-    # # Read metadata from the metadata file
-    # metaFile="${tableName}_metadata"
-    # if [ ! -f "$metaFile" ]; then
-    #     echo "Metadata file for table does not exist."
-    #     return
-    # fi
-
-    # for col in $cols
-    # do
-
-    #     # if [ -z $col ]
-    #     # then
-    #     #     echo "Cols cannot be empty"
-    #     # fi
-
-    #     # elif [[ "$col" =~ [[:space:]] ]] 
-    #     # then
-    #     #     echo "Col cannot contain spaces"
-    #     # fi
-
-    #     # head -1 "$1" | cut -d'|' -f"$col"
-    #     if [ grep -q "$col"  ""$1" | head -1" ]
-    #     then
-    #         echo "Column $col selected."
-    #     else
-    #         echo "Column $col does not exist in the table."
-    #         continue
-    #     fi
-
-    # done
-
+    # read header
+    header=$(head -1 "$table")
 
     for col in "${arr[@]}"
     do
-        if head -1 "$1" | grep -q "$col"
-        then
-            echo "Column $col selected."
-            $awk –F| ‘{print $1}’ /etc/passwd
-        else
-            echo "Column $col does not exist in the table."
+        # find column index
+        colIndex=$(echo "$header" | awk -F'|' -v c="$col" '{
+            for (i=1; i<=NF; i++)
+                if ($i == c) {
+                    print i
+                    exit
+                }
+        }')
+
+        if [ -z "$colIndex" ]; then
+            echo "Column '$col' does not exist"
             continue
         fi
-    done
 
+        echo "Column '$col' selected:"
+        awk -F'|' -v idx="$colIndex" 'NR>1 { print $idx }' "$table"
+        echo "---------------------"
+    done
 }
 
-# validate $1 as table name
+# call function
+selectCols "$1"
