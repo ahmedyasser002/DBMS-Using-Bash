@@ -1,36 +1,51 @@
 #!/bin/bash
 
-create_database(){
-	read -p "Enter Database Name: " dbname
+create_database() {
+    database="databases"
 
-	if [ -d "$dbname" ]; then 
-		echo "❌ Database already exist!"
-	else
-		mkdir "$dbname"
-		echo "✅ Database '$dbname' created successfully."
-	fi
-}	
+    # Ensure databases directory exists
+    mkdir -p "$database"
 
-list_databases(){
-    dbs=$(ls -d */ 2>/dev/null)
+    read -p "Enter Database Name: " dbname
 
-    if [ -z "$dbs" ]; then    
-	echo -e "\e[31mNo directories found.\e[0m"
+    if [ -d "$database/$dbname" ]; then
+        echo "Database already exists!"
     else
-	echo "📂 Available Databases:"
-        echo "$dbs"
+        mkdir "$database/$dbname"
+        echo "Database '$dbname' created successfully in '$database/'."
+    fi
+}
+	
+
+list_databases() {
+    database="databases"
+
+    if [ ! -d "$database" ]; then
+        echo -e "\e[31mNo databases directory found.\e[0m"
+        return
     fi
 
+    dbs=$(ls -d "$database"/*/ 2>/dev/null)
+
+    if [ -z "$dbs" ]; then
+        echo -e "\e[31mNo databases found.\e[0m"
+    else
+        echo "📂 Available Databases:"
+        for db in $dbs; do
+            basename "$db"
+        done
+    fi
 }
+
 
 connect_database() {
     read -p "Enter Database Name to connect: " dbname
 
-    if [ -d "$dbname" ]; then
-        cd "$dbname" || return
+    if [ -d "databases/$dbname" ]; then
+        cd "databases/$dbname" || return
         echo -e "\e[32m✅ Connected to database '$dbname'\e[0m"
-	pwd
-	source ../Screen2/screen2_menu.sh
+	# pwd
+	source ../../Screen2/screen2_menu.sh
 	screen2_menu
 	
     else

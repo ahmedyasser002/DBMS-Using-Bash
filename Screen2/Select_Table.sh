@@ -1,5 +1,7 @@
 #!/bin/bash
-source ../Screen2/select_cols.sh
+source ../../Screen2/select_cols.sh
+source ../../Screen2/select_all.sh
+
 selectFromTable(){
 
     while true
@@ -31,9 +33,11 @@ selectFromTable(){
     echo "1) Select Columns"
     echo "2) Select *"
     echo "3) Select Rows where condition"
+    echo "4) Return to previous menu"
+
 
     echo "----------------------------------"
-    read -p "Please enter your choice [1-3]: " choice
+    read -p "Please enter your choice [1-4]: " choice
 
     
     case $choice in
@@ -41,10 +45,14 @@ selectFromTable(){
         selectCols "$tableName"
         ;;
     2) 
-        listTables
+        selectAll "$tableName"
         ;;
     3) 
         dropTable
+        ;;
+
+    4) 
+        return
         ;;
    
     *) 

@@ -49,6 +49,11 @@ createTable(){
     do
         # Validate column name (not empty, no spaces)
         while true; do
+        if [ "$counter" -eq 1 ]
+        then
+            # Always set first column as PK
+            echo "The first column will be set as Primary Key (PK) by default."
+        fi
             read -p "Please Enter Column $counter : " colName
             if [ -z "$colName" ] 
             then
@@ -64,6 +69,7 @@ createTable(){
         # Validate column type (not empty, no spaces)
         while true
         do
+            
             read -p "Please Enter Column $counter Type : " colType
             if [ -z "$colType" ]
             then
@@ -75,15 +81,14 @@ createTable(){
                 break
             fi
         done
-
         if [ "$counter" -eq 1 ]
         then
-            # Always set first column as PK
-            echo "The first column will be set as Primary Key (PK) by default."
+           
             metadata+="$colName:$colType:PK|"
         else
             metadata+="$colName:$colType|"
         fi
+
 
         ((counter++))
     done
