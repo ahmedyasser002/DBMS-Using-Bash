@@ -4,12 +4,18 @@ listTables(){
     echo "----------------------------------"
     echo "List of Tables:"
     echo "----------------------------------"
-    # -A to remove the . and .. entries
-    if [ "$(ls -A)" ]
+    # List files that do not contain 'metadata' in their name
+    found=0
+    for file in *
+    do
+        if [[ -f "$file" && "$file" != *metadata* ]]
+        then
+            echo "$file"
+            found=1
+        fi
+    done
+    if [ $found -eq 0 ]
     then
-    # -p to append / for directories
-        ls -p | grep -v / 
-    else
         echo "No tables found."
     fi
     echo "----------------------------------"

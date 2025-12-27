@@ -7,15 +7,20 @@ dropTable(){
         if [ -z "$tableName" ]
         then
             echo "Table name cannot be empty."
-        elif [[ "$tableName" =~ [[:space:]] ]]
-        then
-            echo "Table name cannot contain spaces."
+        # elif [[ "$tableName" =~ [[:space:]] ]]
+        # then
+        #     echo "Table name cannot contain spaces."
         elif [ ! -f "$tableName" ] 
         then
             echo "Table does not exist."
         else
             rm "$tableName"
-            echo "Table '$tableName' dropped successfully."
+            # Also remove metadata file if exists
+            if [ -f "${tableName}_metadata" ]
+            then
+                rm "${tableName}_metadata"
+            fi
+            echo "Table '$tableName' and its metadata dropped successfully."
             break
         fi
     done
