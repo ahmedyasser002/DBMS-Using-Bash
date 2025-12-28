@@ -8,12 +8,16 @@ source ../../Screen2/Select_Table.sh
 source ../../Screen2/Update_Table.sh
 source ../../Screen2/Delete_From_Table.sh
 
+
 screen2_menu(){
-    echo "----------------------------------"
-    echo " Welcome to Screen 2 - Main Menu "
-    echo "----------------------------------"
+
+ 
     while true
     do
+    echo -e "\e[32m ******** Connected to $dbname database ******** \e[0m"
+    echo "=================================="
+    echo " Welcome to Screen 2 - Main Menu "
+    echo "=================================="
     echo "1) Create Table"
     echo "2) List Tables"
     echo "3) Drop Table"
@@ -49,13 +53,18 @@ screen2_menu(){
         deleteFromTable
         ;;
     8)
-        return
-        ;;
-        
+    	cd ../..        
+	./dbms.sh       
+	exit            
+	;;
     *) 
         echo $choice is not one of the choices, Try Again.
         ;;
     esac
+    if [ "$choice" != "8" ]; then
+            read -p "Press Enter to continue..."
+            clear;
+        fi
     
     done
     
