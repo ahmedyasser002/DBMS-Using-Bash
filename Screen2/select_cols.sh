@@ -31,11 +31,16 @@ selectCols() {
             continue
         fi
 
+    echo "=============================="
         echo "Column '$col' selected:"
+    echo "=============================="
+
         awk -F'|' -v idx="$colIndex" 'NR>1 { print $idx }' "$table"
         echo "---------------------"
     done
+      echo "=============================="
+    read -p "Press Enter to return to menu..." dummy
+    clear
 }
 
-# call function
-selectCols "$1"
+

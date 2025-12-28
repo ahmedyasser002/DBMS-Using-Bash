@@ -1,11 +1,19 @@
 #!/bin/bash
 source ../../Screen2/select_cols.sh
 source ../../Screen2/select_all.sh
+source ../../Screen2/select_row.sh
+source ../../Screen2/List_Tables.sh
 
 selectFromTable(){
 
     while true
     do
+    	listTables
+	 foundTables=$(ls -p | grep -v / | grep -v metadata)
+         if [ -z "$foundTables" ]; then
+	    return
+        fi
+	    
         read -p "Please Enter Table Name to Select From: " tableName
         if [ -z "$tableName" ]
         then
@@ -25,9 +33,9 @@ selectFromTable(){
     done
 
 
-    echo "----------------------------------"
-    echo " Select from Table - Main Menu "
-    echo "----------------------------------"
+    echo "=================================="
+    echo "       Choose from Menu      "
+    echo "=================================="
     while true
     do
     echo "1) Select Columns"
@@ -48,7 +56,7 @@ selectFromTable(){
         selectAll "$tableName"
         ;;
     3) 
-        dropTable
+        selectRow "$tableName"
         ;;
 
     4) 

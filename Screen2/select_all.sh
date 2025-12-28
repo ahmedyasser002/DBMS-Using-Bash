@@ -8,6 +8,18 @@ selectAll(){
         return 1
     fi
 
+     # ===== NEW SCREEN =====
+    clear
+    echo "=============================="
+    echo "table '$table' Data"
+    echo "=============================="
+
+
     echo "All data from table '$table':"
     cat "$table"
+
+      echo "=============================="
+    read -p "Press Enter to return to menu..." dummy
+    clear
+    
 }

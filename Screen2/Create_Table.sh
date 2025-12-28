@@ -1,18 +1,32 @@
 #!/bin/bash
 
 createTable(){
-    # shopt -s extglob
-    # Validate table name (not empty, no spaces)
+
+    MAX_COLS=10
+    colNames=()
+
+    # Table Name
+
     while true
     do
-        read -p "Please Enter Table Name: " tableName
-        if [ -z "$tableName" ]
+        read -p "Please Enter Table Name (or q to cancel): " tableName
+
+        if [ "$tableName" = "q" ]
+        then
+            echo "Operation canceled."
+            return
+        elif [ -z "$tableName" ]
         then
             echo "Table name cannot be empty."
         elif [[ "$tableName" =~ [[:space:]] ]]
         then
             echo "Table name cannot contain spaces."
-        elif [ -f "$tableName" ] 
+
+        elif ! [[ "$tableName" =~ ^[a-zA-Z][a-zA-Z0-9_]*$ ]]
+        then
+            echo "Table name must start with a letter and contain only letters, numbers, and _."
+    
+        elif [ -f "$tableName" ]
         then
             echo "Table already exists."
             return
@@ -21,22 +35,22 @@ createTable(){
         fi
     done
 
-    # Validate number of columns (positive integer)
+    # Col Nums
+
     while true
     do
-        read -p "Please Enter Number of Columns: " colNums
+        read -p "Please Enter Number of Columns (1-$MAX_COLS or q): " colNums
 
-            # Valid positive integer (no leading zero)
-        # if ! [[ "$colNums" == +([1-9])*([0-9]) ]]
-        # then
-        #     echo "Please enter a valid positive integer."
-        # else
-        #     break
-        # fi
-
-        if ! [[ "$colNums" =~ ^[1-9][0-9]*$ ]]
+        if [ "$colNums" = "q" ]
+        then
+            echo "Operation canceled."
+            return
+        elif ! [[ "$colNums" =~ ^[1-9][0-9]*$ ]]
         then
             echo "Please enter a valid positive integer."
+        elif [ "$colNums" -gt "$MAX_COLS" ]
+        then
+            echo "Maximum number of columns is $MAX_COLS."
         else
             break
         fi
@@ -47,65 +61,84 @@ createTable(){
 
     while [ "$counter" -le "$colNums" ]
     do
-        # Validate column name (not empty, no spaces)
-        while true; do
         if [ "$counter" -eq 1 ]
         then
-            # Always set first column as PK
             echo "The first column will be set as Primary Key (PK) by default."
         fi
-            read -p "Please Enter Column $counter : " colName
-            if [ -z "$colName" ] 
+
+        # Col Name
+
+        while true
+        do
+            read -p "Please Enter Column $counter Name (or q): " colName
+
+            if [ "$colName" = "q" ]
+            then
+                echo "Operation canceled."
+                return
+            elif [ -z "$colName" ]
             then
                 echo "Column name cannot be empty."
             elif [[ "$colName" =~ [[:space:]] ]]
             then
                 echo "Column name cannot contain spaces."
+            elif ! [[ "$colName" =~ ^[a-zA-Z][a-zA-Z0-9_]*$ ]]
+            then
+                echo "Column name must start with a letter and contain only letters, numbers, and _."
+            elif [[ " ${colNames[@]} " =~ " $colName " ]]
+            then
+                echo "Column name already exists."
             else
+                colNames+=("$colName")
                 break
             fi
         done
 
-        # Validate column type (not empty, no spaces)
+        # Col Type
+
         while true
         do
-            
-            read -p "Please Enter Column $counter Type : " colType
-            if [ -z "$colType" ]
+            read -p "Please Enter Column $counter Type (int/string or q): " colType
+
+            if [ "$colType" = "q" ]
+            then
+                echo "Operation canceled."
+                return
+            elif [ -z "$colType" ]
             then
                 echo "Column type cannot be empty."
             elif [[ "$colType" =~ [[:space:]] ]]
             then
                 echo "Column type cannot contain spaces."
+            elif [ "$colType" != "int" ] && [ "$colType" != "string" ]
+            then
+                echo "Please Enter Valid Column Type (string/int)."
             else
                 break
             fi
         done
+
         if [ "$counter" -eq 1 ]
         then
-           
             metadata+="$colName:$colType:PK|"
         else
             metadata+="$colName:$colType|"
         fi
 
-
-        ((counter++))
+        counter=$((counter + 1))
     done
 
-    # Write metadata to a separate file
     echo "${metadata%|}" > "${tableName}_metadata"
-    # Create table file with header row (column names separated by |)
+
     header=""
-    for ((i=1; i<=colNums; i++)); do
-        colDef=$(echo "$metadata" | cut -d'|' -f$i)
-        colName=$(echo "$colDef" | cut -d: -f1)
-        header+="$colName|"
+    for col in "${colNames[@]}"
+    do
+        header+="$col|"
     done
     echo "${header%|}" > "$tableName"
-    echo "Table $tableName created successfully"
-}
 
+    echo "Table $tableName created successfully."
+}
 
 
 # Possible imporvements:

@@ -1,72 +1,89 @@
+source ../../Screen2/List_Tables.sh
+source ../../Screen2/Delete_All.sh
 deleteFromTable() {
 
-    # 1️⃣ Table name
+    echo
+    # ===== Get table name =====
     while true; do
+ 
+    listTables
+    foundTables=$(ls -p | grep -v / | grep -v metadata)
+    if [ -z "$foundTables" ]; then
+
+        return
+    fi
+    
         read -p "Enter table name to delete from: " tableName
-        if [ -f "$tableName" ]; then
-            break
-        else
-            echo "❌ Table does not exist."
-        fi
+        [ -f "$tableName" ] && break
+        echo "Table does not exist."
     done
 
     metaFile="${tableName}_metadata"
 
-    if [ ! -f "$metaFile" ]; then
-        echo "❌ Metadata file not found."
-        return
-    fi
-
-    # 2️⃣ Read metadata
+    # read metadata
     IFS='|' read -r -a columns <<< "$(cat "$metaFile")"
+    numCols=${#columns[@]}
 
+    # search using pk
     pkIndex=-1
-    pkType=""
-    pkName=""
-
-    for i in "${!columns[@]}"; do
-        IFS=':' read -r name type constraint <<< "${columns[i]}"
-        if [ "$constraint" = "PK" ]; then
-            pkIndex=$((i+1))
-            pkType="$type"
-            pkName="$name"
+    for (( i=0; i<numCols; i++ )); do
+        if [[ "${columns[i]}" == *":PK" ]]; then
+            pkIndex=$i
+            pkName=$(echo "${columns[i]}" | cut -d: -f1)
             break
         fi
     done
 
-    if [ "$pkIndex" -eq -1 ]; then
-        echo "❌ No Primary Key defined."
+    # ===== Ask delete method =====
+    
+    echo "1) Delete ALL rows (keep table & metadata)"
+    echo "2) Delete one row using Primary Key ($pkName)"
+    echo "3) Delete using another column"
+    echo "4) Cancel"
+    read -p "Choice: " delChoice
+
+    case $delChoice in
+    
+    1)
+        deleteAllRows
+        ;;
+
+    2)
+        read -p "Enter $pkName value: " value
+        awk -F'|' -v OFS='|' -v col="$((pkIndex+1))" -v val="$value" '
+            $col != val
+        ' "$tableName" > .tmp && mv .tmp "$tableName"
+        echo "Record deleted successfully."
+        ;;
+
+    3)
+        echo "Choose column:"
+        for (( i=0; i<numCols; i++ )); do
+            colName=$(echo "${columns[i]}" | cut -d: -f1)
+            echo "$((i+1))) $colName"
+        done
+
+        read -p "Column number: " colNum
+        colIndex=$((colNum-1))
+        colName=$(echo "${columns[colIndex]}" | cut -d: -f1)
+
+        read -p "Enter value for $colName: " value
+
+        awk -F'|' -v OFS='|' -v col="$((colIndex+1))" -v val="$value" '
+            $col != val
+        ' "$tableName" > .tmp && mv .tmp "$tableName"
+
+        echo "Matching records deleted."
+        ;;
+
+    4)
+        echo "Delete cancelled."
         return
-    fi
+        ;;
 
-    # 3️⃣ Ask for PK value
-    while true; do
-        read -p "Enter $pkName value to delete: " pkValue
-
-        if [ -z "$pkValue" ]; then
-            echo "❌ Value cannot be empty."
-            continue
-        fi
-
-        # Datatype validation
-        if [ "$pkType" = "int" ] && ! [[ "$pkValue" =~ ^-?[0-9]+$ ]]; then
-            echo "❌ $pkName must be an integer."
-            continue
-        fi
-
-        # Check if value exists
-        if awk -F'|' -v val="$pkValue" -v col="$pkIndex" '$col==val {found=1} END{exit !found}' "$tableName"; then
-            break
-        else
-            echo "❌ Record not found."
-        fi
-    done
-
-    # 4️⃣ Delete row
-    awk -F'|' -v val="$pkValue" -v col="$pkIndex" '
-        $col != val
-    ' "$tableName" > .tmp_table && mv .tmp_table "$tableName"
-
-    echo "🗑️ Record deleted successfully."
+    *)
+        echo "Invalid choice."
+        ;;
+    esac
 }
 
