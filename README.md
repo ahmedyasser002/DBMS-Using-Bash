@@ -102,7 +102,7 @@ chmod +x dbms.sh
 
 ## 👩‍💻 Author
 
-**Ahmed Yasser** 
+**Ahmed Yasser** and
 **Shahd Ramadan** 
 
 ITI – Bash DBMS Project
