@@ -4,49 +4,53 @@ selectRow() {
     table="$1"
 
     if [ ! -f "$table" ]; then
-        echo "Table does not exist"
-        read -p "Press Enter to return..." dummy
+        zenity --error --title="Error" --text="Table does not exist."
         return 1
     fi
 
-    header=$(head -1 "$table")
+    # Get header columns
+    IFS='|' read -r -a headers <<< "$(head -1 "$table")"
 
-    while true
-    do
-        read -p "Enter column name: " col
+    # Let user select a column using Zenity list
+    col=$(zenity --list \
+          --title="Select Column" \
+          --text="Select the column to filter by:" \
+          --column="Column Name" \
+          "${headers[@]}" \
+          --height=300 --width=400)
 
-        colIndex=$(echo "$header" | awk -F'|' -v c="$col" '
-            {
-                for (i = 1; i <= NF; i++) {
-                    if ($i == c) {
-                        print i
-                        exit
-                    }
-                }
-            }
-        ')
+    if [ -z "$col" ]; then
+        zenity --info --title="Select Row" --text="Operation canceled."
+        return
+    fi
 
-        if [ -n "$colIndex" ]; then
-            break
-        else
-            echo "Invalid column name!"
-            echo "Available columns: $header"
-        fi
-    done
+    # Find column index
+    colIndex=$(awk -F'|' -v c="$col" 'NR==1 {for(i=1;i<=NF;i++) if($i==c){print i; exit}}' "$table")
 
-    read -p "Enter value to match: " val
+    # Ask for value to match
+    val=$(zenity --entry \
+          --title="Enter Value" \
+          --text="Enter value to match in column '$col':")
 
-    # ===== NEW SCREEN =====
-    clear
-    echo "=============================="
-    echo "Rows where $col = $val"
-    echo "=============================="
+    if [ -z "$val" ]; then
+        zenity --info --title="Select Row" --text="No value entered. Operation canceled."
+        return
+    fi
 
-    awk -F'|' -v idx="$colIndex" -v val="$val" '
-        NR > 1 && $idx == val { print }
-    ' "$table"
+    # Get matching rows
+    matchingRows=$(awk -F'|' -v idx="$colIndex" -v val="$val" 'NR>1 && $idx==val {print}' "$table")
 
-    echo "=============================="
-    read -p "Press Enter to return to menu..." dummy
-    clear
+    if [ -z "$matchingRows" ]; then
+        zenity --info --title="Result" --text="No matching rows found for $col = $val."
+        return
+    fi
+
+    # Display matching rows
+    zenity --text-info \
+           --title="Rows where $col = $val" \
+           --width=500 --height=400 \
+           --filename=<(echo "$matchingRows")
 }
+
+
+

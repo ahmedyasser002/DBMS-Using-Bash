@@ -1,25 +1,21 @@
 #!/bin/bash
 
-selectAll(){
+selectAll() {
     table="$1"
 
     if [ ! -f "$table" ]; then
-        echo "Table does not exist"
+        zenity --error --title="Error" --text="Table does not exist."
         return 1
     fi
 
-     # ===== NEW SCREEN =====
-    clear
-    echo "=============================="
-    echo "table '$table' Data"
-    echo "=============================="
+    # Read entire table
+    tableData=$(cat "$table")
 
-
-    echo "All data from table '$table':"
-    cat "$table"
-
-      echo "=============================="
-    read -p "Press Enter to return to menu..." dummy
-    clear
-    
+    # Display table data in Zenity text-info dialog
+    zenity --text-info \
+           --title="All Data from Table '$table'" \
+           --width=600 --height=400 \
+           --filename=<(echo "$tableData")
 }
+
+

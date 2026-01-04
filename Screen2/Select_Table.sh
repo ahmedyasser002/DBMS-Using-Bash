@@ -4,71 +4,81 @@ source ../../Screen2/select_all.sh
 source ../../Screen2/select_row.sh
 source ../../Screen2/List_Tables.sh
 
-selectFromTable(){
+selectFromTable() {
 
-    while true
-    do
-    	listTables
-	 foundTables=$(ls -p | grep -v / | grep -v metadata)
-         if [ -z "$foundTables" ]; then
-	    return
+    # ================= TABLE SELECTION =================
+    while true; do
+        # Get tables
+        tables=()
+        for file in *; do
+            if [[ -f "$file" && "$file" != *metadata* ]]; then
+                tables+=("$file")
+            fi
+        done
+
+        if [ ${#tables[@]} -eq 0 ]; then
+            zenity --info --title="Select Table" --text="No tables found."
+            return
         fi
-	    
-        read -p "Please Enter Table Name to Select From: " tableName
-        if [ -z "$tableName" ]
-        then
-            echo "Table name cannot be empty."
-        elif [[ "$tableName" =~ [[:space:]] ]]
-        then
-            echo "Table name cannot contain spaces."
-        elif [[ "$tableName" == *metadata* ]]
-        then
-            echo "Cannot Select from a metadata file."
-        elif [ ! -f "$tableName" ] 
-        then
-            echo "Table does not exist."
-        else
-            break
+
+        # Zenity list for table selection
+        tableName=$(zenity --list \
+                    --title="Select Table" \
+                    --column="Tables" \
+                    "${tables[@]}" \
+                    --height=300 \
+                    --width=300)
+
+        # User canceled
+        if [ -z "$tableName" ]; then
+            zenity --info --title="Select Table" --text="Operation canceled."
+            return
         fi
+
+        # Validate table
+        if [[ "$tableName" == *metadata* || ! -f "$tableName" ]]; then
+            zenity --error --title="Error" --text="Invalid table selected."
+            continue
+        fi
+
+        break
     done
 
+    # ================= MENU SELECTION =================
+    while true; do
+        choice=$(zenity --list \
+                 --title="Select Operation" \
+                 --column="Option" \
+                 "Select Columns" \
+                 "Select *" \
+                 "Select Rows where condition" \
+                 "Return to previous menu" \
+                 --height=300 \
+                 --width=350)
 
-    echo "=================================="
-    echo "       Choose from Menu      "
-    echo "=================================="
-    while true
-    do
-    echo "1) Select Columns"
-    echo "2) Select *"
-    echo "3) Select Rows where condition"
-    echo "4) Return to previous menu"
+        if [ -z "$choice" ]; then
+            zenity --info --title="Operation" --text="Operation canceled."
+            return
+        fi
 
-
-    echo "----------------------------------"
-    read -p "Please enter your choice [1-4]: " choice
-
-    
-    case $choice in
-    1) 
-        selectCols "$tableName"
-        ;;
-    2) 
-        selectAll "$tableName"
-        ;;
-    3) 
-        selectRow "$tableName"
-        ;;
-
-    4) 
-        return
-        ;;
-   
-    *) 
-        echo $choice is not one of the choices, Try Again.
-        ;;
-    esac
+        case "$choice" in
+            "Select Columns")
+                selectCols "$tableName"
+                ;;
+            "Select *")
+                selectAll "$tableName"
+                ;;
+            "Select Rows where condition")
+                selectRow "$tableName"
+                ;;
+            "Return to previous menu")
+                return
+                ;;
+            *)
+                zenity --error --title="Error" --text="Invalid choice. Please try again."
+                ;;
+        esac
     done
-
-
-
 }
+
+

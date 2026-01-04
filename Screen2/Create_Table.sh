@@ -1,56 +1,44 @@
 #!/bin/bash
 
-createTable(){
+createTable() {
 
     MAX_COLS=10
     colNames=()
 
-    # Table Name
+    # ===== Table Name =====
+    while true; do
+        tableName=$(zenity --entry \
+            --title="Create Table" \
+            --text="Enter Table Name:")
 
-    while true
-    do
-        read -p "Please Enter Table Name (or q to cancel): " tableName
+        [ $? -ne 0 ] && return   # Cancel pressed
 
-        if [ "$tableName" = "q" ]
-        then
-            echo "Operation canceled."
-            return
-        elif [ -z "$tableName" ]
-        then
-            echo "Table name cannot be empty."
-        elif [[ "$tableName" =~ [[:space:]] ]]
-        then
-            echo "Table name cannot contain spaces."
-
-        elif ! [[ "$tableName" =~ ^[a-zA-Z][a-zA-Z0-9_]*$ ]]
-        then
-            echo "Table name must start with a letter and contain only letters, numbers, and _."
-    
-        elif [ -f "$tableName" ]
-        then
-            echo "Table already exists."
+        if [ -z "$tableName" ]; then
+            zenity --error --text="Table name cannot be empty."
+        elif [[ "$tableName" =~ [[:space:]] ]]; then
+            zenity --error --text="Table name cannot contain spaces."
+        elif ! [[ "$tableName" =~ ^[a-zA-Z][a-zA-Z0-9_]*$ ]]; then
+            zenity --error --text="Table name must start with a letter and contain only letters, numbers, and _."
+        elif [ -f "$tableName" ]; then
+            zenity --error --text="Table already exists."
             return
         else
             break
         fi
     done
 
-    # Col Nums
+    # ===== Number of Columns =====
+    while true; do
+        colNums=$(zenity --entry \
+            --title="Create Table" \
+            --text="Enter Number of Columns (1-$MAX_COLS):")
 
-    while true
-    do
-        read -p "Please Enter Number of Columns (1-$MAX_COLS or q): " colNums
+        [ $? -ne 0 ] && return
 
-        if [ "$colNums" = "q" ]
-        then
-            echo "Operation canceled."
-            return
-        elif ! [[ "$colNums" =~ ^[1-9][0-9]*$ ]]
-        then
-            echo "Please enter a valid positive integer."
-        elif [ "$colNums" -gt "$MAX_COLS" ]
-        then
-            echo "Maximum number of columns is $MAX_COLS."
+        if ! [[ "$colNums" =~ ^[1-9][0-9]*$ ]]; then
+            zenity --error --text="Please enter a valid positive integer."
+        elif [ "$colNums" -gt "$MAX_COLS" ]; then
+            zenity --error --text="Maximum number of columns is $MAX_COLS."
         else
             break
         fi
@@ -59,67 +47,52 @@ createTable(){
     metadata=""
     counter=1
 
-    while [ "$counter" -le "$colNums" ]
-    do
-        if [ "$counter" -eq 1 ]
-        then
-            echo "The first column will be set as Primary Key (PK) by default."
+    while [ "$counter" -le "$colNums" ]; do
+
+        if [ "$counter" -eq 1 ]; then
+            zenity --info --text="Column 1 will be the Primary Key (PK)."
         fi
 
-        # Col Name
+        # ===== Column Name =====
+        while true; do
+            colName=$(zenity --entry \
+                --title="Create Table" \
+                --text="Enter Column $counter Name:")
 
-        while true
-        do
-            read -p "Please Enter Column $counter Name (or q): " colName
+            [ $? -ne 0 ] && return
 
-            if [ "$colName" = "q" ]
-            then
-                echo "Operation canceled."
-                return
-            elif [ -z "$colName" ]
-            then
-                echo "Column name cannot be empty."
-            elif [[ "$colName" =~ [[:space:]] ]]
-            then
-                echo "Column name cannot contain spaces."
-            elif ! [[ "$colName" =~ ^[a-zA-Z][a-zA-Z0-9_]*$ ]]
-            then
-                echo "Column name must start with a letter and contain only letters, numbers, and _."
-            elif [[ " ${colNames[@]} " =~ " $colName " ]]
-            then
-                echo "Column name already exists."
+            if [ -z "$colName" ]; then
+                zenity --error --text="Column name cannot be empty."
+            elif [[ "$colName" =~ [[:space:]] ]]; then
+                zenity --error --text="Column name cannot contain spaces."
+            elif ! [[ "$colName" =~ ^[a-zA-Z][a-zA-Z0-9_]*$ ]]; then
+                zenity --error --text="Column name must start with a letter and contain only letters, numbers, and _."
+            elif [[ " ${colNames[@]} " =~ " $colName " ]]; then
+                zenity --error --text="Column name already exists."
             else
                 colNames+=("$colName")
                 break
             fi
         done
 
-        # Col Type
+        # ===== Column Type =====
+        while true; do
+            colType=$(zenity --list \
+                --title="Create Table" \
+                --text="Select type for column '$colName'" \
+                --column="Type" \
+                int string)
 
-        while true
-        do
-            read -p "Please Enter Column $counter Type (int/string or q): " colType
+            [ $? -ne 0 ] && return
 
-            if [ "$colType" = "q" ]
-            then
-                echo "Operation canceled."
-                return
-            elif [ -z "$colType" ]
-            then
-                echo "Column type cannot be empty."
-            elif [[ "$colType" =~ [[:space:]] ]]
-            then
-                echo "Column type cannot contain spaces."
-            elif [ "$colType" != "int" ] && [ "$colType" != "string" ]
-            then
-                echo "Please Enter Valid Column Type (string/int)."
+            if [ -z "$colType" ]; then
+                zenity --error --text="You must select a column type."
             else
                 break
             fi
         done
 
-        if [ "$counter" -eq 1 ]
-        then
+        if [ "$counter" -eq 1 ]; then
             metadata+="$colName:$colType:PK|"
         else
             metadata+="$colName:$colType|"
@@ -128,28 +101,16 @@ createTable(){
         counter=$((counter + 1))
     done
 
+    # ===== Write Metadata =====
     echo "${metadata%|}" > "${tableName}_metadata"
 
+    # ===== Write Header =====
     header=""
-    for col in "${colNames[@]}"
-    do
+    for col in "${colNames[@]}"; do
         header+="$col|"
     done
     echo "${header%|}" > "$tableName"
 
-    echo "Table $tableName created successfully."
+    zenity --info --title="Success" --text="Table '$tableName' created successfully 🎉"
 }
 
-
-# Possible imporvements:
-# 1. Validate col types (e.g., only allow certain types)
-# 2. May make pk the first column by default
-# 3. Duplicate column names check
-# 4. Check the way of pattern matching if i want to use the +([]) and *([]) patterns
-# 5. Use functions for validation to avoid code repetition
-# 6. Add more constraints (e.g., NOT NULL, UNIQUE)
-# 7. Column name pattern validation (e.g., start with letter, only alphanumeric and _)
-# 8. Limit maximum number of columns
-# 9. Column name can not be repeated
-# 10. Add option to cancel table creation at any point
-# 11. Col type should be int or string only

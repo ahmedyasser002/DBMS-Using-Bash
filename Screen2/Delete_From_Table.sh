@@ -1,32 +1,42 @@
+#!/bin/bash
 source ../../Screen2/List_Tables.sh
 source ../../Screen2/Delete_All.sh
+
 deleteFromTable() {
 
-    echo
-    # ===== Get table name =====
+    # ================= TABLE SELECTION =================
     while true; do
- 
-    listTables
-    foundTables=$(ls -p | grep -v / | grep -v metadata)
-    if [ -z "$foundTables" ]; then
+        tables=()
+        for file in *; do
+            [[ -f "$file" && "$file" != *metadata* ]] && tables+=("$file")
+        done
 
-        return
-    fi
-    
-        read -p "Enter table name to delete from: " tableName
+        if [ ${#tables[@]} -eq 0 ]; then
+            zenity --info --title="Delete From Table" --text="No tables found."
+            return
+        fi
+
+        tableName=$(zenity --list \
+                    --title="Select Table" \
+                    --text="Choose a table to delete from:" \
+                    --column="Tables" \
+                    "${tables[@]}" \
+                    --height=300 --width=400)
+
+        [ -z "$tableName" ] && return
         [ -f "$tableName" ] && break
-        echo "Table does not exist."
+
+        zenity --error --title="Error" --text="Table does not exist."
     done
 
     metaFile="${tableName}_metadata"
-
-    # read metadata
     IFS='|' read -r -a columns <<< "$(cat "$metaFile")"
     numCols=${#columns[@]}
 
-    # search using pk
+    # ================= FIND PRIMARY KEY =================
     pkIndex=-1
-    for (( i=0; i<numCols; i++ )); do
+    pkName=""
+    for ((i=0; i<numCols; i++)); do
         if [[ "${columns[i]}" == *":PK" ]]; then
             pkIndex=$i
             pkName=$(echo "${columns[i]}" | cut -d: -f1)
@@ -34,56 +44,61 @@ deleteFromTable() {
         fi
     done
 
-    # ===== Ask delete method =====
-    
-    echo "1) Delete ALL rows (keep table & metadata)"
-    echo "2) Delete one row using Primary Key ($pkName)"
-    echo "3) Delete using another column"
-    echo "4) Cancel"
-    read -p "Choice: " delChoice
+    # ================= DELETE METHOD =================
+    delChoice=$(zenity --list \
+                --title="Delete Method" \
+                --column="Option" \
+                "Delete ALL rows (keep table & metadata)" \
+                "Delete using another column" \
+                "Cancel" \
+                --height=300 --width=400)
 
-    case $delChoice in
-    
-    1)
-        deleteAllRows
-        ;;
+    [ -z "$delChoice" ] && return
 
-    2)
-        read -p "Enter $pkName value: " value
-        awk -F'|' -v OFS='|' -v col="$((pkIndex+1))" -v val="$value" '
-            $col != val
-        ' "$tableName" > .tmp && mv .tmp "$tableName"
-        echo "Record deleted successfully."
-        ;;
+    case "$delChoice" in
+        "Delete ALL rows (keep table & metadata)")
+            deleteAllRows "$tableName"
+            zenity --info --title="Success" --text="All rows deleted successfully."
+            ;;
 
-    3)
-        echo "Choose column:"
-        for (( i=0; i<numCols; i++ )); do
-            colName=$(echo "${columns[i]}" | cut -d: -f1)
-            echo "$((i+1))) $colName"
-        done
+        "Delete using another column")
+            # Let user select column
+            checklist=()
+            for col in "${columns[@]}"; do
+                colName=$(echo "$col" | cut -d: -f1)
+                checklist+=("$colName")
+            done
 
-        read -p "Column number: " colNum
-        colIndex=$((colNum-1))
-        colName=$(echo "${columns[colIndex]}" | cut -d: -f1)
+            colName=$(zenity --list --title="Select Column" --column="Column" "${checklist[@]}" --height=300 --width=400)
+            [ -z "$colName" ] && return
 
-        read -p "Enter value for $colName: " value
+            # Find column index
+            colIndex=-1
+            for ((i=0;i<numCols;i++)); do
+                [[ "$(echo "${columns[i]}" | cut -d: -f1)" == "$colName" ]] && colIndex=$i && break
+            done
 
-        awk -F'|' -v OFS='|' -v col="$((colIndex+1))" -v val="$value" '
-            $col != val
-        ' "$tableName" > .tmp && mv .tmp "$tableName"
+            value=$(zenity --entry --title="Enter Value" --text="Enter value for $colName:")
+            [ -z "$value" ] && return
 
-        echo "Matching records deleted."
-        ;;
+            matchCount=$(awk -F'|' -v val="$value" -v col="$((colIndex+1))" '$col==val{count++} END{print count+0}' "$tableName")
+            if [ "$matchCount" -eq 0 ]; then
+                zenity --error --title="Error" --text="Record not found in table. Please enter a valid value."
+                return
+            fi
 
-    4)
-        echo "Delete cancelled."
-        return
-        ;;
+            awk -F'|' -v OFS='|' -v col="$((colIndex+1))" -v val="$value" '$col != val' "$tableName" > .tmp && mv .tmp "$tableName"
+            zenity --info --title="Success" --text="Matching records deleted."
+            ;;
 
-    *)
-        echo "Invalid choice."
-        ;;
+        "Cancel")
+            zenity --info --title="Cancelled" --text="Delete operation cancelled."
+            return
+            ;;
+
+        *)
+            zenity --error --title="Error" --text="Invalid choice."
+            ;;
     esac
 }
 

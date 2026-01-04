@@ -1,41 +1,53 @@
-dropTable(){
-    while true
-    do
-        listTables
-        foundTables=$(ls -p | grep -v / | grep -v metadata)
-        if [ -z "$foundTables" ]; then
- 
-           return
+#!/bin/bash
+
+dropTable() {
+    while true; do
+        # Get list of tables
+        tables=()
+        for file in *; do
+            if [[ -f "$file" && "$file" != *metadata* ]]; then
+                tables+=("$file")
+            fi
+        done
+
+        if [ ${#tables[@]} -eq 0 ]; then
+            zenity --info --title="Drop Table" --text="No tables found."
+            return
         fi
 
-        read -p "Please Enter Table Name to Drop: " tableName
+        # Let user select a table using Zenity list
+        tableName=$(zenity --list \
+                    --title="Select Table to Drop" \
+                    --column="Tables" \
+                    "${tables[@]}" \
+                    --height=300 \
+                    --width=300)
+
+        # If user cancels
         if [ -z "$tableName" ]; then
-            echo "Table name cannot be empty."
-        elif [ ! -f "$tableName" ]; then
-            echo "Table does not exist."
+            zenity --info --title="Drop Table" --text="Operation canceled."
+            return
+        fi
+
+        # Confirm deletion
+        zenity --question \
+               --title="Confirm Drop" \
+               --text="Are you sure you want to drop '$tableName' and all its data?"
+
+        if [ $? -eq 0 ]; then
+            # User clicked Yes
+            rm -f "$tableName"
+            if [ -f "${tableName}_metadata" ]; then
+                rm -f "${tableName}_metadata"
+            fi
+            zenity --info --title="Drop Table" --text="Table '$tableName' and its metadata dropped successfully."
+            return
         else
-            #confirm to delete
-            while true; do
-                read -p "Are you sure you want to drop '$tableName' with all its data? (y/n): " confirm
-                case $confirm in
-                    y|Y)
-                        rm "$tableName"
-                        if [ -f "${tableName}_metadata" ]; then
-                            rm "${tableName}_metadata"
-                        fi
-                        echo "Table '$tableName' and its metadata dropped successfully."
-                        break 2  # exit both loops
-                        ;;
-                    n|N)
-                        echo "Operation canceled."
-                        break 2
-                        ;;
-                    *)
-                        echo "Please enter y or n."
-                        ;;
-                esac
-            done
+            # User clicked No
+            zenity --info --title="Drop Table" --text="Operation canceled."
+            return
         fi
     done
 }
+
 
